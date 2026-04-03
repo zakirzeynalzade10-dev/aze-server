@@ -1,3 +1,5 @@
-FROM php:8.2-apache
-COPY . /var/www/html/
-EXPOSE 80
+FROM node:20
+WORKDIR /app
+COPY . .
+RUN npm install
+CMD ["node", "server.js"]
