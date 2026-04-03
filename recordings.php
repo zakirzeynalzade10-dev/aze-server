@@ -1,22 +1,31 @@
 <?php
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+include 'config.php';
+
 header('Content-Type: application/json');
 
-require 'config.php';
-$db = getDB();
+$method = $_SERVER['REQUEST_METHOD'];
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['audio'])) {
-    $uploadDir = 'uploads/';
-    if (!is_dir($uploadDir)) { mkdir($uploadDir, 0777, true); }
-    $filename = time() . '.m4a';
-    if (move_uploaded_file($_FILES['audio']['tmp_name'], $uploadDir . $filename)) {
-        $stmt = $db->prepare('INSERT INTO recordings (username, filename) VALUES (?, ?)');
-        $stmt->execute(['Zakir', $filename]);
-        echo json_encode(['success' => true]);
+if ($method === 'GET') {
+    if (file_exists(DATA_FILE)) {
+        echo file_get_contents(DATA_FILE);
+    } else {
+        echo json_encode([]);
     }
-    exit;
+} elseif ($method === 'POST') {
+    $input = json_decode(file_get_contents('php://input'), true);
+    
+    $currentData = [];
+    if (file_exists(DATA_FILE)) {
+        $currentData = json_decode(file_get_contents(DATA_FILE), true);
+    }
+    
+    $currentData[] = [
+        'id' => time(),
+        'text' => $input['text'] ?? '',
+        'date' => date('Y-m-d H:i:s')
+    ];
+    
+    file_put_contents(DATA_FILE, json_encode($currentData));
+    echo json_encode(['success' => true]);
 }
-
-$stmt = $db->query('SELECT * FROM recordings ORDER BY id DESC LIMIT 10');
-echo json_encode(['success' => true, 'recordings' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+?>
